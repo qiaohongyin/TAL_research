@@ -1,0 +1,295 @@
+run: 1
+debug: false
+mode: train
+path:
+  openpack:
+    rootdir: /workspaces/TAL_research/data
+  datasets:
+    openpack: ${path.openpack.rootdir}
+dataset:
+  stream:
+    kind: dataset/stream/multimodal
+    name: atr01-iot
+    mdetadata:
+      labels:
+        app: openpack-benchmarks
+        version: 1.0.0
+        multimodal: true
+    spec:
+      imu:
+        kind: dataset/stream/imu
+        path:
+          dir: ${path.openpack.rootdir}/${user.name}/window
+          fname: ${session}.npz
+          full_path: ${.dir}/${.fname}
+  stream_k4a:
+    kind: dataset/stream/multimodal
+    name: k4a-2d-kpt
+    mdetadata:
+      labels:
+        app: openpack-benchmarks
+        version: 1.0.0
+        multimodal: true
+    spec:
+      kinect2dKpt:
+        kind: dataset/stream/keypoint
+        spec:
+          poseEstimationModel: mmpose-hrnet-w48-posetrack18-384x288-posewarper-stage2
+          path:
+            dir: ${path.openpack.rootdir}/${user.name}/window
+            fname: ${session}.npz
+          nodes:
+            0: nose
+            1: left_eye
+            2: right_eye
+            3: left_ear
+            4: right_ear
+            5: left_shoulder
+            6: right_shoulder
+            7: left_elbow
+            8: right_elbow
+            9: left_wrist
+            10: right_wrist
+            11: left_hip
+            12: right_hip
+            13: left_knee
+            14: right_knee
+            15: left_ankle
+            16: right_ankle
+  split:
+    name: pilot-challenge
+    train:
+    - - U0101
+      - S0100
+    - - U0102
+      - S0100
+    - - U0103
+      - S0100
+    - - U0104
+      - S0100
+    - - U0105
+      - S0100
+    - - U0106
+      - S0100
+    - - U0107
+      - S0100
+    - - U0108
+      - S0100
+    - - U0109
+      - S0100
+    - - U0110
+      - S0100
+    - - U0111
+      - S0100
+    val:
+    - - U0101
+      - S0600
+    test:
+    - - U0101
+      - S0200
+    - - U0101
+      - S0300
+    - - U0101
+      - S0400
+    - - U0101
+      - S0500
+    - - U0102
+      - S0200
+    - - U0102
+      - S0300
+    - - U0102
+      - S0400
+    - - U0102
+      - S0500
+    - - U0103
+      - S0200
+    - - U0103
+      - S0300
+    - - U0103
+      - S0400
+    - - U0103
+      - S0500
+    - - U0104
+      - S0200
+    - - U0104
+      - S0300
+    - - U0104
+      - S0400
+    - - U0105
+      - S0200
+    - - U0105
+      - S0300
+    - - U0105
+      - S0400
+    - - U0105
+      - S0500
+    - - U0106
+      - S0200
+    - - U0106
+      - S0300
+    - - U0106
+      - S0400
+    - - U0106
+      - S0500
+    - - U0107
+      - S0200
+    - - U0107
+      - S0300
+    - - U0107
+      - S0400
+    - - U0107
+      - S0500
+    - - U0108
+      - S0200
+    - - U0108
+      - S0300
+    - - U0108
+      - S0500
+    - - U0109
+      - S0200
+    - - U0109
+      - S0300
+    - - U0109
+      - S0400
+    - - U0109
+      - S0500
+    - - U0110
+      - S0200
+    - - U0110
+      - S0300
+    - - U0110
+      - S0400
+    - - U0110
+      - S0500
+    - - U0111
+      - S0200
+    - - U0111
+      - S0300
+    - - U0111
+      - S0400
+    - - U0111
+      - S0500
+    - - U0201
+      - S0300
+    - - U0201
+      - S0400
+    - - U0201
+      - S0500
+    - - U0202
+      - S0100
+    - - U0202
+      - S0200
+    - - U0202
+      - S0300
+    - - U0202
+      - S0400
+    - - U0202
+      - S0500
+    - - U0203
+      - S0100
+    - - U0203
+      - S0200
+    - - U0203
+      - S0300
+    - - U0203
+      - S0400
+    - - U0203
+      - S0500
+    - - U0204
+      - S0100
+    - - U0204
+      - S0200
+    - - U0204
+      - S0300
+    - - U0204
+      - S0400
+    - - U0204
+      - S0500
+    - - U0205
+      - S0100
+    - - U0205
+      - S0200
+    - - U0205
+      - S0300
+    - - U0205
+      - S0400
+    - - U0205
+      - S0500
+    - - U0206
+      - S0100
+    - - U0206
+      - S0200
+    - - U0206
+      - S0300
+    - - U0206
+      - S0400
+    - - U0206
+      - S0500
+    - - U0207
+      - S0100
+    - - U0207
+      - S0200
+    - - U0207
+      - S0300
+    - - U0207
+      - S0400
+    - - U0207
+      - S0500
+    - - U0208
+      - S0100
+    - - U0208
+      - S0200
+    - - U0208
+      - S0300
+    - - U0208
+      - S0400
+    - - U0208
+      - S0500
+    - - U0209
+      - S0100
+    - - U0209
+      - S0200
+    - - U0209
+      - S0300
+    - - U0209
+      - S0400
+    - - U0209
+      - S0500
+    - - U0210
+      - S0100
+    - - U0210
+      - S0200
+    - - U0210
+      - S0300
+    - - U0210
+      - S0400
+    - - U0210
+      - S0500
+optimizer:
+  name: adam-exp
+  type: Adam
+  lr: 0.001
+  weight_decay: 0.0001
+  scheduler:
+    type: ExponentialLR
+    gamma: 0.99
+model:
+  name: DCL
+seed: 10
+metadata:
+  task: ${dataset.annotation.name}
+  labels:
+    app: openpack-benchmarks
+    issue: I01-EXP01-V1
+    params: ${optimizer.name}/LR${optimizer.lr}
+train:
+  epochs:
+    minimum: 100
+    maximum: 500
+  checkpoint: last
+  early_stop:
+    monitor: train_acc
+    min_delta: 0.001
+    patience: 30
+    verbose: false
+    mode: max

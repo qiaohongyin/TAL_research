@@ -1,0 +1,8 @@
+run: 1
+debug: true
+mode: "test"
+hydra:
+  run:
+    dir: .
+  job:
+    chdir: true

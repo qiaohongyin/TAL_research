@@ -1,0 +1,5 @@
+data/
+*.ckpt
+*.pt
+.hydra/
+__pycache__/
