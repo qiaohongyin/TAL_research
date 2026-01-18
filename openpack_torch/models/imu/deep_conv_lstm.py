@@ -108,64 +108,6 @@ class SelfAttentionBlock(nn.Module):
 
 
 
-    
-class DeepConvLSTM(nn.Module):
-
-    def __init__(self, in_ch=6, num_classes=11, hidden_units=128):
-        super().__init__()
-
-        # --- Conv blocks ---
-        blocks = []
-        for i in range(4):
-            in_ch_ = in_ch if i == 0 else 64
-            blocks.append(
-                nn.Sequential(
-                    nn.Conv2d(in_ch_, 64, kernel_size=(5, 1), padding=(2, 0)),
-                    nn.BatchNorm2d(64),
-                    nn.ReLU(inplace=True)
-                )
-            )
-        self.conv2to5 = nn.ModuleList(blocks)
-
-        # --- LSTMs ---
-        self.lstm6 = nn.LSTM(64, hidden_units, batch_first=True)
-        self.dropout6 = nn.Dropout(0.5)
-
-        self.pos_enc = SinusoidalPositionalEncoding(hidden_units)
-        self.sa_block = SelfAttentionBlock(hidden_units, 4)
-
-        self.lstm7 = nn.LSTM(hidden_units, hidden_units, batch_first=True)
-        self.dropout7 = nn.Dropout(0.5)
-
-        # --- Classification head ---
-        self.out8 = nn.Conv2d(hidden_units, num_classes, 1)
-
-    def forward(self, x):
-        B, CH, T, _ = x.shape
-
-        # --- Conv ---
-        for blk in self.conv2to5:
-            x = blk(x)
-        x = x.squeeze(3).transpose(1, 2)  # (B,T,64)
-
-        # --- Backbone LSTMs & SA ---
-        x, _ = self.lstm6(x)
-        x = self.dropout6(x)
-
-        z = self.pos_enc(x)
-        z, attn_backbone = self.sa_block(z)
-
-        x, _ = self.lstm7(z)
-        x = self.dropout7(x)
-        lstm_out = x  # (B,T,hidden)
-
-        # --- 分类 logits ---
-        class_logits = self.out8(lstm_out.transpose(1, 2).unsqueeze(3))
-
-        return class_logits,lstm_out,attn_backbone
-
-
-
 
 class DeepConvLSTM_PT(nn.Module):
 
