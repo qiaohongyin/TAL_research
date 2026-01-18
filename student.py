@@ -90,39 +90,39 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         sk_x = batch["skeleton"].to(device=self.device)
         with torch.no_grad():
             teacher_logits,_, teacher_att,teacher_med = self.assistant_model(x_x) 
-            # --- Task A: Attention Distillation Prep ---
+        # --- Task A: Attention Distillation Prep ---
         student_logits, dist_pred, student_att, student_med = self.net(x)
-        
         teacher_imp_h = torch.logsumexp(teacher_att, dim=-1)   # (B,H,T)
         student_imp_h = torch.logsumexp(student_att, dim=-1)   # (B,H,T)
-
         teacher_imp = torch.logsumexp(teacher_imp_h, dim=1)    # (B,T)
         student_imp = torch.logsumexp(student_imp_h, dim=1)    # (B,T)
-        
         student_imp=min_max_norm(student_imp)
         teacher_imp=min_max_norm(teacher_imp)
         loss_tad = F.mse_loss(student_imp,teacher_imp)
-        
-        
-        # 2. Regression (Motion Dist)
+
+        # --- Task B: Regression (Motion Dist)
         right_wrist_pos = sk_x[:, :, :, 10]
         diff = torch.zeros_like(right_wrist_pos)
         diff[:, :, 1:] = right_wrist_pos[:, :, 1:] - right_wrist_pos[:, :, :-1]
         movement_target = torch.norm(diff, dim=1) 
         target_norm = (movement_target - 0.048405) / (0.130322 + 1e-6)
         loss_reg = F.mse_loss(dist_pred.reshape(target_norm.shape), target_norm)
-        
+
+        # --- Task C: Contrastive Learning ---
         z_teacher = F.normalize(self.proj_sk(teacher_med), dim=2)
         z_student = F.normalize(self.proj_imu(student_med), dim=2)
         loss_cl = self.dense_contrastive_loss(z_student, z_teacher)
 
-        # --- Task 0: Classification (Main) ---
+        # --- Task D: Classification (Main) ---
         student_logits = student_logits.squeeze(3)
         B, C, T = student_logits.shape
         logits_flat = student_logits.permute(0, 2, 1).reshape(-1, C)
         t_flat = t.reshape(-1)
         ce_loss = self.criterion(logits_flat, t_flat) 
 
+        # ==========================================
+        # 5. Weighted Sum
+        # ==========================================
         precision1 = torch.exp(-self.loss_weights[0])
         l1 = precision1 * ce_loss + self.loss_weights[0]
         

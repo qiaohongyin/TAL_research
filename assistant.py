@@ -82,7 +82,6 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
     def forward(self, x):
         return self.net(x)
     
-    # --- Helper Functions ---
     def gaussian_smooth(self, importance_vec):
         """输入: (B, T) -> 输出: (B, T)"""
         B, T = importance_vec.shape
@@ -134,44 +133,29 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
             teacher_importance_raw = torch.logsumexp(hand_att_merged, dim=-2)
             teacher_soft_target = self.gaussian_smooth(teacher_importance_raw)
             teacher_norm = teacher_soft_target / (teacher_soft_target.sum(dim=-1, keepdim=True) + 1e-9)
-
-            # --- Task C: Contrastive Learning Prep ---
             teacher_feat = teacher_med.mean(dim=3).permute(0, 2, 1)
 
-        # ==========================================
-        # 3. Student Forward (DeepConvLSTM)
-        # ==========================================
         student_logits, dist_pred, student_att, student_med = self.net(x)
         
-        # --- Task A: Attention Prep ---
-        if student_att.ndim == 4:
-            student_att_heads = student_att.mean(dim=1) 
-        else:
-            student_att_heads = student_att
-            
-        student_importance = torch.logsumexp(student_att_heads, dim=-2) 
-        student_norm = student_importance / (student_importance.sum(dim=-1, keepdim=True) + 1e-9)
-
-        # --- Task C: Contrastive Prep ---
-        z_teacher = F.normalize(self.proj_sk(teacher_feat), dim=2)
-        z_student = F.normalize(self.proj_imu(student_med), dim=2)
-
-        
-        # --- Task 0: Classification (Main) ---
+        # --- Task A: Classification (Main) ---
         student_logits = student_logits.squeeze(3)
         B, C, T = student_logits.shape
         logits_flat = student_logits.permute(0, 2, 1).reshape(-1, C)
         t_flat = t.reshape(-1)
         ce_loss = self.criterion(logits_flat, t_flat) 
         
-        # --- Task A: Attention Distillation ---
-        if student_norm.shape != teacher_norm.shape:
-             if student_norm.ndim == 1: student_norm = student_norm.unsqueeze(0).expand_as(teacher_norm)
-        loss_tad = F.mse_loss(student_norm, teacher_norm) * 1000000
         # --- Task B: Regression ---
         loss_reg = F.mse_loss(dist_pred, target_norm_reg)
+
         # --- Task C: Contrastive Learning ---
+        z_teacher = F.normalize(self.proj_sk(teacher_feat), dim=2)
+        z_student = F.normalize(self.proj_imu(student_med), dim=2)
         loss_cl = self.dense_contrastive_loss(z_student, z_teacher)
+
+        # --- Task D: Attention Prep ---
+        student_importance = torch.logsumexp(student_att, dim=-2) 
+        student_norm = student_importance / (student_importance.sum(dim=-1, keepdim=True) + 1e-9)
+        loss_tad = F.mse_loss(student_norm, teacher_norm) * 1000000
 
         # ==========================================
         # 5. Weighted Sum
