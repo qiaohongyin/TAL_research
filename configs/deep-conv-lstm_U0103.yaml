@@ -1,0 +1,74 @@
+seed: 10
+assistant_ckpt_path: "/datastore/code/U0103.ckpt"
+logdir: "/datastore/code/log/student/U0103"
+defaults:
+  - common
+  - _self_
+  - override hydra/job_logging: custom
+
+
+path:
+  openpack:
+    rootdir: /datastore/openpack_data1
+  datasets:
+    openpack: ${path.openpack.rootdir}
+
+
+train:
+  checkpoint: last
+  early_stop:
+    monitor: "train_acc"
+    min_delta: 0.001
+    patience: 30
+    verbose: false
+    mode: "max"
+
+dataset:
+  stream:
+    name: atr01-iot
+    spec:
+      imu:
+        path:
+          dir: /datastore/openpack_data1/${user.name}/window
+          fname: ${session}.npz
+          full_path: ${.dir}/${.fname}
+
+  stream_k4a:
+    name: k4a-2d-kpt
+    spec:
+      kinect2dKpt:
+        spec:
+          path:
+            dir: ${path.openpack.rootdir}/${user.name}/window
+            fname: ${session}.npz
+
+
+  split:
+    name: U0103
+    train:
+      - [U0101, S0100]
+      - [U0102, S0100]
+      - [U0104, S0100]
+      - [U0105, S0100]
+      - [U0106, S0100]
+      - [U0107, S0100]
+      - [U0108, S0100]
+      - [U0109, S0100]
+      - [U0110, S0100]
+      - [U0111, S0100]
+      - [U0101, S0700]
+    val:
+      - [U0101, S0600]
+      
+    test:
+      - [U0103, S0100]
+      - [U0103, S0200]
+      - [U0103, S0300]
+      - [U0103, S0400]
+      - [U0103, S0500]
+
+      - [U0210, S0100]
+      - [U0210, S0200]
+      - [U0210, S0300]
+      - [U0210, S0400]
+      - [U0210, S0500]

@@ -1,24 +1,16 @@
 seed: 10
 defaults:
   - common
-  - path
-  - dataset/stream: atr01-iot
-  - dataset/stream_k4a: k4a-2d-kpt
-  - dataset/split: pilot-challenge
-  - optimizer: adam-exp
-  - model: dcl
   - _self_
   - override hydra/job_logging: custom
-metadata:
-  task: ${dataset.annotation.name}
-  labels:
-    app: openpack-benchmarks
-    issue: "I01-EXP01-V1"
-    params: "${optimizer.name}/LR${optimizer.lr}"
+
+path:
+  openpack:
+    rootdir: /datastore/openpack_data1
+  datasets:
+    openpack: ${path.openpack.rootdir}
+
 train:
-  epochs:
-    minimum: 100
-    maximum: 500
   checkpoint: last
   early_stop:
     monitor: "train_acc"
@@ -26,3 +18,152 @@ train:
     patience: 30
     verbose: false
     mode: "max"
+
+
+dataset:
+  stream:
+    name: atr01-iot
+    spec:
+      imu:
+        path:
+          dir: /datastore/openpack_data1/${user.name}/window
+          fname: ${session}.npz
+          full_path: ${.dir}/${.fname}
+
+  stream_k4a:
+    name: k4a-2d-kpt
+    spec:
+      kinect2dKpt:
+        spec:
+          path:
+            dir: ${path.openpack.rootdir}/${user.name}/window
+            fname: ${session}.npz
+
+
+  split:
+    name: worker_dependent
+    train:
+      - [U0101, S0100]
+      - [U0102, S0100]
+      - [U0103, S0100]
+      - [U0104, S0100]
+      - [U0105, S0100]
+      - [U0106, S0100]
+      - [U0107, S0100]
+      - [U0108, S0100]
+      - [U0109, S0100]
+      - [U0110, S0100]
+      - [U0111, S0100]
+    val:
+      - [U0101, S0600]
+    test:
+      - [U0101, S0200]
+      - [U0101, S0300]
+      - [U0101, S0400]
+      - [U0101, S0500]
+
+      - [U0102, S0200]
+      - [U0102, S0300]
+      - [U0102, S0400]
+      - [U0102, S0500]
+
+      - [U0103, S0200]
+      - [U0103, S0300]
+      - [U0103, S0400]
+      - [U0103, S0500]
+
+      - [U0104, S0200]
+      - [U0104, S0300]
+      - [U0104, S0400]
+
+      - [U0105, S0200]
+      - [U0105, S0300]
+      - [U0105, S0400]
+      - [U0105, S0500]
+
+      - [U0106, S0200]
+      - [U0106, S0300]
+      - [U0106, S0400]
+      - [U0106, S0500]
+
+      - [U0107, S0200]
+      - [U0107, S0300]
+      - [U0107, S0400]
+      - [U0107, S0500]
+
+      - [U0108, S0200]
+      - [U0108, S0300]
+      - [U0108, S0500]
+
+      - [U0109, S0200]
+      - [U0109, S0300]
+      - [U0109, S0400]
+      - [U0109, S0500]
+
+      - [U0110, S0200]
+      - [U0110, S0300]
+      - [U0110, S0400]
+      - [U0110, S0500]
+
+      - [U0111, S0200]
+      - [U0111, S0300]
+      - [U0111, S0400]
+      - [U0111, S0500]
+
+      - [U0201, S0300]
+      - [U0201, S0400]
+      - [U0201, S0500]
+
+      - [U0202, S0100]
+      - [U0202, S0200]
+      - [U0202, S0300]
+      - [U0202, S0400]
+      - [U0202, S0500]
+
+      - [U0203, S0100]
+      - [U0203, S0200]
+      - [U0203, S0300]
+      - [U0203, S0400]
+      - [U0203, S0500]
+
+      - [U0204, S0100]
+      - [U0204, S0200]
+      - [U0204, S0300]
+      - [U0204, S0400]
+      - [U0204, S0500]
+
+      - [U0205, S0100]
+      - [U0205, S0200]
+      - [U0205, S0300]
+      - [U0205, S0400]
+      - [U0205, S0500]
+
+      - [U0206, S0100]
+      - [U0206, S0200]
+      - [U0206, S0300]
+      - [U0206, S0400]
+      - [U0206, S0500]
+
+      - [U0207, S0100]
+      - [U0207, S0200]
+      - [U0207, S0300]
+      - [U0207, S0400]
+      - [U0207, S0500]
+
+      - [U0208, S0100]
+      - [U0208, S0200]
+      - [U0208, S0300]
+      - [U0208, S0400]
+      - [U0208, S0500]
+
+      - [U0209, S0100]
+      - [U0209, S0200]
+      - [U0209, S0300]
+      - [U0209, S0400]
+      - [U0209, S0500]
+
+      - [U0210, S0100]
+      - [U0210, S0200]
+      - [U0210, S0300]
+      - [U0210, S0400]
+      - [U0210, S0500]

@@ -1,5 +1,0 @@
-path:
-  openpack:
-    rootdir: /workspaces/TAL_research/data
-  datasets:
-    openpack: ${path.openpack.rootdir}
