@@ -17,16 +17,14 @@ class OpenPackkd(torch.utils.data.Dataset):
         super().__init__()
         self.cfg = cfg
 
-
         self.imu_list = []
         self.skel_list = []
         self.dist_list = []
         self.t_list = []
         self.ts_list = []
 
-
         if user_session_list:
-            print(f"📂 准备加载 {len(user_session_list)} 个 Session...")
+            print(f"Preparing to load {len(user_session_list)} 个 Session...")
             self.load_dataset(user_session_list)
             
             if len(self.imu_list) > 0:
@@ -40,11 +38,11 @@ class OpenPackkd(torch.utils.data.Dataset):
                 else:
                     self.x_dist = None
                     
-                print(f"✅ 数据集加载完成! 总样本数: {self.x_imu.shape[0]}")
+                print(f"Dataset loading complete! Total samples: {self.x_imu.shape[0]}")
             else:
-                raise RuntimeError("未加载到任何数据，请检查 user_session_list 或文件路径。")
+                raise RuntimeError("No data found. Check user_session_list or file path.")
         else:
-            print("⚠️ Warning: user_session_list 为空，未加载数据。")
+            print("Warning: user_session_list is empty; no data loaded.")
 
     def load_dataset(self, user_session_list: tuple[tuple[str, str], ...]) -> None:
         for seq_idx, (user, session) in enumerate(user_session_list):
@@ -70,20 +68,20 @@ class OpenPackkd(torch.utils.data.Dataset):
         return self.x_imu.shape[0]
 
     def __getitem__(self, idx: int) -> dict[str, Any]:
-
+        # 1. IMU: (6, 450) -> (6, 450, 1) 
         imu_np = self.x_imu[idx]
         x_imu = torch.from_numpy(imu_np).float().unsqueeze(-1)
 
-        # 2. Skeleton: (3, 450, 17) -> 直接转 float
+        # 2. Skeleton: (3, 450, 17) 
         skel_np = self.x_skel[idx]
         x_skel = torch.from_numpy(skel_np).float()
 
-        # 3. Label: (1, 450) -> (450,) 去除多余维度
+        # 3. Label: (1, 450) -> (450,) 
         t = torch.from_numpy(self.t[idx]).long().squeeze(0)
-
         # 4. Timestamp: (1, 450) -> (450,)
         ts = torch.from_numpy(self.ts[idx]).long().squeeze(0)
 
+        # 5. Dist 
         if self.x_dist is not None:
             x_dist = torch.from_numpy(self.x_dist[idx]).float().squeeze(0)
         else:
@@ -100,17 +98,14 @@ class OpenPackkd(torch.utils.data.Dataset):
     
 # -----------------------------------------------------------------------------
 def load_wrapper(cfg: DictConfig) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    path = Path(
-        cfg.dataset.stream_k4a.spec.kinect2dKpt.spec.path.dir,
-        cfg.dataset.stream_k4a.spec.kinect2dKpt.spec.path.fname,
-    )
+    path = Path(cfg.dataset.path)
     data = np.load(path)
     
     x_imu = data['x_imu']   # Shape: (N, 6, 450)
     x_sk  = data['x_skel']  # Shape: (N, 3, 450, 17)
     t     = data['t']       # Shape: (N, 1, 450)
     ts    = data['ts']      # Shape: (N, 1, 450)
-    dist = data['x_dist'] # Shape: (N, 1, 450)
+    dist = data['x_dist']   # Shape: (N, 1, 450)
 
 
     return x_imu, x_sk, t, ts, dist

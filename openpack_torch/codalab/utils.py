@@ -12,7 +12,9 @@ logger = getLogger(__name__)
 import numpy as np
 import pandas as pd
 from typing import Dict, Tuple
-
+# -----------------------------------------------------------------------
+# 1. Select the final observation within every one-second window.
+# -----------------------------------------------------------------------
 def resample_to_1hz_last_point(
     ts: np.ndarray, 
     y: np.ndarray, 
@@ -29,13 +31,18 @@ def resample_to_1hz_last_point(
     
     return y_1hz, t_1hz
 
-
+# -----------------------------------------------------------------------
 def eval_operation_segmentation_wrapper(
     cfg: DictConfig,
     outputs: Dict[str, Dict[str, np.ndarray]],
     classes_tuple: Tuple[Tuple[int, str], ...],
 ) -> pd.DataFrame:
-
+    
+    """
+    Converts 30Hz model outputs to 1Hz (taking the last point per second),
+    calculates metrics per session (e.g., F1-score), and aggregates global 
+    results across all sessions.
+    """
 
     ignore_class_id = -1
     for i, (cls_id, cls_name) in enumerate(classes_tuple):
@@ -43,21 +50,18 @@ def eval_operation_segmentation_wrapper(
             ignore_class_id = i 
             break
             
-
     df_scores = []
     t_id_concat, y_id_concat = [], []
 
 
     for key, d in outputs.items():
-
         if d["y"].ndim == 3:
             y_pred_30hz = d["y"][0].argmax(axis=0)
         else:
             y_pred_30hz = d["y"].argmax(axis=0) if d["y"].ndim == 2 else d["y"]
             
         t_gt_30hz = d["t_idx"]  
-        ts_30hz = d["unixtime"] 
-
+        ts_30hz = d["unixtime"]  
 
         y_pred_1hz, t_gt_1hz = resample_to_1hz_last_point(ts_30hz, y_pred_30hz, t_gt_30hz)
 
@@ -72,7 +76,6 @@ def eval_operation_segmentation_wrapper(
         )
         df_tmp["key"] = key
         df_scores.append(df_tmp.reset_index(drop=False))
-
 
     df_tmp = eval_operation_segmentation(
         np.concatenate(t_id_concat, axis=0),

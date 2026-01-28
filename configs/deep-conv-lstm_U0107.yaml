@@ -1,17 +1,9 @@
-seed: 10
 assistant_ckpt_path: "/datastore/code/U0107.ckpt"
-logdir: "/datastore/code/log/student/U0107"
+logdir: "/datastore/code/log/s0"
 defaults:
   - common
   - _self_
   - override hydra/job_logging: custom
-
-path:
-  openpack:
-    rootdir: /datastore/openpack_data1
-  datasets:
-    openpack: ${path.openpack.rootdir}
-
 
 train:
   checkpoint: last
@@ -23,25 +15,7 @@ train:
     mode: "max"
 
 dataset:
-  stream:
-    name: atr01-iot
-    spec:
-      imu:
-        path:
-          dir: /datastore/openpack_data1/${user.name}/window
-          fname: ${session}.npz
-          full_path: ${.dir}/${.fname}
-
-  stream_k4a:
-    name: k4a-2d-kpt
-    spec:
-      kinect2dKpt:
-        spec:
-          path:
-            dir: ${path.openpack.rootdir}/${user.name}/window
-            fname: ${session}.npz
-
-
+  path: /datastore/openpack_data1/${user.name}/window/${session}.npz
   split:
     name: U0107
     train:

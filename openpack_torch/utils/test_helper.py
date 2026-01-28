@@ -6,7 +6,7 @@ import pandas as pd
 import pytorch_lightning as pl
 from omegaconf import DictConfig
 from openpack_torch.lightning import BaseLightningModule
-from openpack_torch.codalab import (
+from openpack_torch.codalab.utils import (
     eval_operation_segmentation_wrapper,
 )
 

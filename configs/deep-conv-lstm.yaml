@@ -1,14 +1,8 @@
-seed: 10
 defaults:
   - common
   - _self_
   - override hydra/job_logging: custom
 
-path:
-  openpack:
-    rootdir: /datastore/openpack_data1
-  datasets:
-    openpack: ${path.openpack.rootdir}
 
 train:
   checkpoint: last
@@ -21,23 +15,7 @@ train:
 
 
 dataset:
-  stream:
-    name: atr01-iot
-    spec:
-      imu:
-        path:
-          dir: /datastore/openpack_data1/${user.name}/window
-          fname: ${session}.npz
-          full_path: ${.dir}/${.fname}
-
-  stream_k4a:
-    name: k4a-2d-kpt
-    spec:
-      kinect2dKpt:
-        spec:
-          path:
-            dir: ${path.openpack.rootdir}/${user.name}/window
-            fname: ${session}.npz
+  path: /datastore/openpack_data1/${user.name}/window/${session}.npz
 
 
   split:
@@ -54,7 +32,6 @@ dataset:
       - [U0109, S0100]
       - [U0110, S0100]
       - [U0111, S0100]
-      - [U0101, S0700]
     val:
       - [U0101, S0600]
     test:

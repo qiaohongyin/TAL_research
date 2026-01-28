@@ -46,7 +46,6 @@ class BaseLightningModule(pl.LightningModule):
         )
         t_flat = t.reshape(-1)
 
-        # FIXME: I want to use macro average score.
         ignore_index = num_classes - 1
         acc = accuracy_score(
             preds_flat.transpose(0, 1),

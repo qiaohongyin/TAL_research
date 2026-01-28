@@ -15,28 +15,19 @@ class OpenPackBaseDataModule(pl.LightningDataModule):
     def __init__(self, cfg: DictConfig):
         super().__init__()
         self.cfg = cfg
-
-        self.debug = cfg.debug
         self.num_workers = 3
         self.batch_size = 32
-    def get_kwargs_for_datasets(self, stage: Optional[str] = None) -> Dict:
-
-        kwargs = {
-        }
-        return kwargs
-
 
     def _init_datasets(
         self,
         user_session: list[tuple[int, int]],
-        kwargs: dict,
     ) -> dict[str, torch.utils.data.Dataset]:
 
         datasets = dict()
         for user, session in user_session:
             key = f"{user}-{session}"
             datasets[key] = self.dataset_class(
-                copy.deepcopy(self.cfg), [(user, session)], **kwargs
+                copy.deepcopy(self.cfg), [(user, session)]
             )
         return datasets
 
@@ -44,20 +35,17 @@ class OpenPackBaseDataModule(pl.LightningDataModule):
 
         split = self.cfg.dataset.split
         if stage in (None, "fit"):
-            kwargs = self.get_kwargs_for_datasets(stage="train")
-            self.op_train = self.dataset_class(self.cfg, split.train, **kwargs)
+            self.op_train = self.dataset_class(self.cfg, split.train)
         else:
             self.op_train = None
 
         if stage in (None, "fit", "validate"):
-            kwargs = self.get_kwargs_for_datasets(stage="validate")
-            self.op_val = self._init_datasets(split.val, kwargs)
+            self.op_val = self._init_datasets(split.val)
         else:
             self.op_val = None
 
         if stage in (None, "test"):
-            kwargs = self.get_kwargs_for_datasets(stage="test")
-            self.op_test = self._init_datasets(split.test, kwargs)
+            self.op_test = self._init_datasets(split.test)
         else:
             self.op_test = None
 
