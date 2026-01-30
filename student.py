@@ -1,97 +1,86 @@
 from logging import getLogger
 from pathlib import Path
 from typing import Dict
-
 import hydra
 import pytorch_lightning as pl
-import os
-from omegaconf import DictConfig
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
-
-import pytorch_lightning.callbacks 
+from omegaconf import DictConfig
+import pytorch_lightning.callbacks
 import pytorch_lightning.loggers
 import openpack_torch as optorch
 from openpack_torch.utils.test_helper import test_helper
 from openpack_torch.utils.io import cleanup_dir
+
 logger = getLogger(__name__)
 
 # ----------------------------------------------------------------------
-class OpenPackImuDataModule(optorch.data.OpenPackBaseDataModule):
-    dataset_class = optorch.data.datasets.OpenPackkd
+def kd_loss_sqakd(student_feats: torch.Tensor,
+                  teacher_feats: torch.Tensor,
+                  temperature: float = 5.0) -> torch.Tensor:
+    t = temperature
+    with torch.no_grad():
+        p_teacher = F.softmax(teacher_feats / t, dim=-1)
+    log_p_student = F.log_softmax(student_feats / t, dim=-1)
+    kl = F.kl_div(log_p_student, p_teacher, reduction="batchmean")
+    return kl    
 
 def min_max_norm(x):
         # x: (B, T)
     x_min = x.min(dim=-1, keepdim=True).values
     x_max = x.max(dim=-1, keepdim=True).values
-    return (x - x_min) / (x_max - x_min + 1e-9)
+    return (x - x_min) / (x_max - x_min + 1e-9) 
+    
+# ----------------------------------------------------------------------
 
+class OpenPackImuDataModule(optorch.data.OpenPackBaseDataModule):
+    dataset_class = optorch.data.datasets.OpenPackkd
+ 
 class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
     def __init__(self, cfg: DictConfig):
         super().__init__(cfg)
         # --- Assistant Model ---
-        ckpt_path = "/workspaces/TAL_research/assistant.ckpt"
+        ckpt_path = cfg.get("assistant_ckpt_path", "/datastore/code/log/a0/lightning_logs/version_0/checkpoints/last.ckpt") 
+        print(f"Loading Teacher Checkpoint from: {ckpt_path}") 
         ckpt = torch.load(ckpt_path, map_location=self.device)  
-        self.assistant_model = optorch.models.imu.DeepConvLSTM_PT(6, 11)
+        self.assistant_model = optorch.models.imu.DeepConvLSTM_PT1(6, 11)
         state_dict = {k.replace("net.", ""): v 
                     for k, v in ckpt["state_dict"].items() if k.startswith("net.")}
         self.assistant_model.load_state_dict(state_dict, strict=False)
         for p in self.assistant_model.parameters():
             p.requires_grad = False
-        self.proj_imu = torch.nn.Sequential(
-            torch.nn.Linear(128, 128),
-            torch.nn.ReLU(),
-            torch.nn.Linear(128, 128)
-        )
-        self.proj_sk = torch.nn.Sequential(
-            torch.nn.Linear(128, 128), 
-            torch.nn.ReLU(),
-            torch.nn.Linear(128, 128)
-        )
-        self.temperature = 0.07
-        self.loss_weights = nn.Parameter(torch.zeros(4))
-
-
+        self.loss_weights = nn.Parameter(torch.zeros(4))       
+        
     def init_model(self, cfg: DictConfig) -> torch.nn.Module:
         model = optorch.models.imu.DeepConvLSTM_PT(3, 11)
         return model
 
     def forward(self, x):
-        return self.net(x)
-    
-    def dense_contrastive_loss(self, z_student, z_teacher):
-        """ InfoNCE Loss with Random Sampling """
-        B, T, C = z_student.shape
-        num_samples = 64
-        
-        indices = torch.randint(0, T, (B, num_samples), device=self.device) # (B, 64)
-        idx_expanded = indices.unsqueeze(-1).expand(-1, -1, C) # (B, 64, C)
-        
-        # Gather
-        z_stu_sampled = torch.gather(z_student, 1, idx_expanded)
-        z_tea_sampled = torch.gather(z_teacher, 1, idx_expanded)
-        
-        # Flatten -> (N, C)
-        z_stu_flat = z_stu_sampled.reshape(-1, C) 
-        z_tea_flat = z_tea_sampled.reshape(-1, C)
-        
-        # InfoNCE
-        logits = torch.matmul(z_stu_flat, z_tea_flat.T) / self.temperature
-        labels = torch.arange(z_stu_flat.shape[0], device=self.device)
-        
-        loss = F.cross_entropy(logits, labels)
-        return loss
-          
+        return self.net(x)  
+         
     def train_val_common_step(self, batch: Dict, batch_idx):
         x = batch["imu_student"].to(device=self.device, dtype=torch.float)
         t = batch["t"].to(device=self.device, dtype=torch.long) 
+        sk_x = batch["skeleton"].to(device=self.device, dtype=torch.float)
         x_x = batch["imu_teacher"].to(device=self.device, dtype=torch.float) 
-        sk_x = batch["skeleton"].to(device=self.device)
+
+        # ---- Teacher ----
         with torch.no_grad():
             teacher_logits,_, teacher_att,teacher_med = self.assistant_model(x_x) 
-        # --- Task A: Attention Distillation Prep ---
-        student_logits, dist_pred, student_att, student_med = self.net(x)
+
+        # ---- Student ----
+        s_logits, dist_logits, student_att, student_med = self(x)
+        s_logits = s_logits.squeeze(3)  # [B, num_cls, T]
+        B, C, T = s_logits.shape
+        logits_flat = s_logits.permute(0, 2, 1).reshape(-1, C)
+        t_flat = t.reshape(-1)
+        ce = self.criterion(logits_flat, t_flat) 
+
+        # ---- SQAKD Loss ----
+        loss_sqakd = kd_loss_sqakd(student_med, teacher_med)
+        
+        # ---- att loss----
         teacher_imp_h = torch.logsumexp(teacher_att, dim=-1)   # (B,H,T)
         student_imp_h = torch.logsumexp(student_att, dim=-1)   # (B,H,T)
         teacher_imp = torch.logsumexp(teacher_imp_h, dim=1)    # (B,T)
@@ -99,53 +88,40 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         student_imp=min_max_norm(student_imp)
         teacher_imp=min_max_norm(teacher_imp)
         loss_tad = F.mse_loss(student_imp,teacher_imp)
-
-        # --- Task B: Regression (Motion Dist)
-        right_wrist_pos = sk_x[:, :, :, 10]
+        
+        # ---- dist loss----
+        right_wrist_pos = sk_x[:, :, :, 10]  # (B,C,T)
         diff = torch.zeros_like(right_wrist_pos)
         diff[:, :, 1:] = right_wrist_pos[:, :, 1:] - right_wrist_pos[:, :, :-1]
-        movement_target = torch.norm(diff, dim=1) 
-        target_norm = (movement_target - 0.048405) / (0.130322 + 1e-6)
-        loss_reg = F.mse_loss(dist_pred.reshape(target_norm.shape), target_norm)
+        movement_target = torch.norm(diff, dim=1)  # (B,T)
+        thresholds = torch.tensor([0.016, 0.041] , device=movement_target.device)
+        dist_label = torch.bucketize(movement_target, thresholds).long()  # (B,T) in {0,1,2}
+        dist_logits_flat = dist_logits.reshape(-1, 3)
+        dist_label_flat = dist_label.reshape(-1)
+        loss_dist_ce = F.cross_entropy(dist_logits_flat, dist_label_flat)
 
-        # --- Task C: Contrastive Learning ---
-        z_teacher = F.normalize(self.proj_sk(teacher_med), dim=2)
-        z_student = F.normalize(self.proj_imu(student_med), dim=2)
-        loss_cl = self.dense_contrastive_loss(z_student, z_teacher)
-
-        # --- Task D: Classification (Main) ---
-        student_logits = student_logits.squeeze(3)
-        B, C, T = student_logits.shape
-        logits_flat = student_logits.permute(0, 2, 1).reshape(-1, C)
-        t_flat = t.reshape(-1)
-        ce_loss = self.criterion(logits_flat, t_flat) 
-
-        # ==========================================
-        # 5. Weighted Sum
-        # ==========================================
-        precision1 = torch.exp(-self.loss_weights[0])
-        l1 = precision1 * ce_loss + self.loss_weights[0]
         
+        precision1 = torch.exp(-self.loss_weights[0])
+        l1 = precision1 * ce + self.loss_weights[0]
+
         precision2 = torch.exp(-self.loss_weights[1])
-        l2 = precision2 * loss_tad + self.loss_weights[1]
+        l2 = precision2 * loss_sqakd + self.loss_weights[1]
         
         precision3 = torch.exp(-self.loss_weights[2])
-        l3 = precision3 * loss_reg + self.loss_weights[2]
+        l3 = precision3 * loss_dist_ce + self.loss_weights[2]
         
         precision4 = torch.exp(-self.loss_weights[3])
-        l4 = precision4 * loss_cl + self.loss_weights[3]
-
-        loss = l1 + l2 + l3 + l4
-        acc = self.calc_accuracy(student_logits, t)
+        l4 = precision4 * loss_tad + self.loss_weights[3]
         
+        loss = l1 + l2 +l3 + l4
+        acc = self.calc_accuracy(s_logits, t)
+
         return {
-            "loss": loss, 
-            "acc": acc, 
-            "loss_tad": loss_tad,
-            "loss_cl": loss_cl, 
-            "loss_reg": loss_reg,
-            
+            "loss": loss,
+            "acc": acc,
+            "ce": ce.detach(),
         }
+
     
     
     def test_step(self, batch: Dict, batch_idx: int) -> Dict:
@@ -158,12 +134,9 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         outputs = dict(t=t, y=y_hat, unixtime=ts_unix)
         self.test_step_outputs.append(outputs)
         return outputs
-
 # ----------------------------------------------------------------------
-
-
 def train(cfg: DictConfig):
-    logdir = Path("/workspaces/TAL_research/log/s0")
+    logdir = Path("/datastore/code/log/new")
     logger.debug(f"logdir = {logdir}")
     cleanup_dir(logdir, exclude="hydra")
 
@@ -171,17 +144,12 @@ def train(cfg: DictConfig):
     plmodel = DeepConvLSTMLM(cfg)
     logger.info(plmodel)
 
-
-    max_epoch = (
-        cfg.train.debug.epochs.maximum if cfg.debug else cfg.train.epochs.maximum
-    )
-
     checkpoint_callback = pytorch_lightning.callbacks.ModelCheckpoint(
         save_top_k=1,
         save_last=True,
         mode=cfg.train.early_stop.mode,
         monitor=cfg.train.early_stop.monitor,
-        filename="{epoch:02d}-{train/loss:.2f}-{val/loss:.2f}",
+        filename="{epoch:02d}",
         verbose=False,
     )
 
@@ -192,9 +160,9 @@ def train(cfg: DictConfig):
     pl_logger = pytorch_lightning.loggers.CSVLogger(logdir)
     trainer = pl.Trainer(
         accelerator="gpu",
-        devices=[0],
+        devices=[2],
         min_epochs=1,
-        max_epochs=max_epoch,
+        max_epochs=500,
         logger=pl_logger,
         default_root_dir=logdir,
         enable_progress_bar=True,
@@ -213,8 +181,8 @@ def test(cfg: DictConfig, mode: str = "test"):
     assert mode in ("test", "submission", "test-on-submission")
     logger.debug(f"test() function is called with mode={mode}.")
 
-    device = torch.device("cuda:1")
-    logdir = Path("/workspaces/TAL_research/log/s0")
+    device = torch.device("cuda:2")
+    logdir = Path("/datastore/code/log/new")
 
     datamodule = OpenPackImuDataModule(cfg)
     datamodule.setup(mode)
@@ -229,7 +197,7 @@ def test(cfg: DictConfig, mode: str = "test"):
     plmodel.to(dtype=torch.float, device=device)
     trainer = pl.Trainer(
         accelerator="gpu",
-        devices=[0],
+        devices=[2],
         logger=False,  # disable logging module
         default_root_dir=logdir,
         enable_progress_bar=False,  # disable progress bar
@@ -237,6 +205,7 @@ def test(cfg: DictConfig, mode: str = "test"):
     )
 
     test_helper(cfg, datamodule, plmodel, trainer, logdir)
+
 
 
 @hydra.main(
