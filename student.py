@@ -16,7 +16,7 @@ from openpack_torch.utils.io import cleanup_dir
 logger = getLogger(__name__)
 
 # ----------------------------------------------------------------------
-def kd_loss_sqakd(student_feats: torch.Tensor,
+def kd_loss_kd(student_feats: torch.Tensor,
                   teacher_feats: torch.Tensor,
                   temperature: float = 5.0) -> torch.Tensor:
     t = temperature
@@ -78,7 +78,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         ce = self.criterion(logits_flat, t_flat) 
 
         # ---- SQAKD Loss ----
-        loss_sqakd = kd_loss_sqakd(student_med, teacher_med)
+        loss_kd = kd_loss_kd(student_med, teacher_med)
         
         # ---- 计算att----
         teacher_imp_h = torch.logsumexp(teacher_att, dim=-1)   # (B,H,T)
@@ -105,7 +105,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         l1 = precision1 * ce + self.loss_weights[0]
 
         precision2 = torch.exp(-self.loss_weights[1])
-        l2 = precision2 * loss_sqakd + self.loss_weights[1]
+        l2 = precision2 * loss_kd + self.loss_weights[1]
         
         precision3 = torch.exp(-self.loss_weights[2])
         l3 = precision3 * loss_dist_ce + self.loss_weights[2]
