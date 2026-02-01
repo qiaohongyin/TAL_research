@@ -24,13 +24,9 @@ class SinusoidalPositionalEncoding(nn.Module):
 
 # ---------- Multi-Head Temporal Self-Attention ----------
 class MultiHeadTemporalAttention_(nn.Module):
-    """
-    输入:  x [B, T, D]
-    输出:  out [B, T, D], attn [B, H, T, T]
-    """
+
     def __init__(self, d_model: int, num_heads: int = 8, dropout: float = 0.1):
         super().__init__()
-        assert d_model % num_heads == 0, "d_model 必须能被 num_heads 整除"
         self.d_model   = d_model
         self.num_heads = num_heads
         self.head_dim  = d_model // num_heads
@@ -114,13 +110,10 @@ class SelfAttentionBlock(nn.Module):
 
 
 
-    
-class DeepConvLSTM(nn.Module):
+class DeepConvLSTM_PT(nn.Module):
 
     def __init__(self, in_ch=6, num_classes=11, hidden_units=128):
         super().__init__()
-
-        # --- Conv blocks ---
         blocks = []
         for i in range(4):
             in_ch_ = in_ch if i == 0 else 64
@@ -132,8 +125,6 @@ class DeepConvLSTM(nn.Module):
                 )
             )
         self.conv2to5 = nn.ModuleList(blocks)
-
-        # --- LSTMs ---
         self.lstm6 = nn.LSTM(64, hidden_units, batch_first=True)
         self.dropout6 = nn.Dropout(0.5)
 
@@ -142,128 +133,42 @@ class DeepConvLSTM(nn.Module):
 
         self.lstm7 = nn.LSTM(hidden_units, hidden_units, batch_first=True)
         self.dropout7 = nn.Dropout(0.5)
-
-        # --- Classification head ---
+        
         self.out8 = nn.Conv2d(hidden_units, num_classes, 1)
+
+        self.reg_lstm = nn.LSTM(input_size=64, hidden_size=64, batch_first=True)
+        self.dist_reg_head = nn.Sequential(
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 3)
+        )
 
     def forward(self, x):
         B, CH, T, _ = x.shape
-
-        # --- Conv ---
         for blk in self.conv2to5:
             x = blk(x)
-        x = x.squeeze(3).transpose(1, 2)  # (B,T,64)
-
-        # --- Backbone LSTMs & SA ---
-        x, _ = self.lstm6(x)
-        x = self.dropout6(x)
-
-        z = self.pos_enc(x)
-        z, attn_backbone = self.sa_block(z)
-
-        x, _ = self.lstm7(z)
-        x = self.dropout7(x)
-        lstm_out = x  # (B,T,hidden)
-
-        # --- 分类 logits ---
-        class_logits = self.out8(lstm_out.transpose(1, 2).unsqueeze(3))
-
-        return class_logits,lstm_out,attn_backbone
-
- 
-class DeepConvLSTM_new(nn.Module):
-
-    def __init__(self, in_ch=6, num_classes=11, hidden_units=128, num_levels=4):
-        super().__init__()
-
-        # --- Conv blocks ---
-        blocks = []
-        for i in range(4):
-            in_ch_ = in_ch if i == 0 else 64
-            blocks.append(
-                nn.Sequential(
-                    nn.Conv2d(in_ch_, 64, kernel_size=(5, 1), padding=(2, 0)),
-                    nn.BatchNorm2d(64),
-                    nn.ReLU(inplace=True)
-                )
-            )
-        self.conv2to5 = nn.ModuleList(blocks)
-
-        # --- LSTMs ---
-        self.lstm6 = nn.LSTM(64, hidden_units, batch_first=True)
-        self.dropout6 = nn.Dropout(0.5)
-
-        self.pos_enc = SinusoidalPositionalEncoding(hidden_units)
-        self.sa_block = SelfAttentionBlock(hidden_units, 4)
-
-        self.lstm7 = nn.LSTM(hidden_units, hidden_units, batch_first=True)
-        self.dropout7 = nn.Dropout(0.5)
-
-        # --- Classification head ---
-        self.out8 = nn.Conv2d(hidden_units, num_classes, 1)
-
-        # --- Level head: Mini Self-Attention + Linear ---
-        self.level_attn = MiniSelfAttention(hidden_units, num_heads=4)
-        self.dist_fc = nn.Linear(hidden_units, num_levels)
-
-        self.block = 30  # 每秒 30 点
-
-    def forward(self, x):
-        B, CH, T, _ = x.shape
-
-        # --- Conv ---
-        for blk in self.conv2to5:
-            x = blk(x)
-        x = x.squeeze(3).transpose(1, 2)  # (B,T,64)
-
-        # --- Backbone LSTMs & SA ---
-        x, _ = self.lstm6(x)
-        x = self.dropout6(x)
-
-        z = self.pos_enc(x)
-        z, attn_backbone = self.sa_block(z)
-
-        x, _ = self.lstm7(z)
-        x = self.dropout7(x)
-        lstm_out = x  # (B,T,hidden)
-
-        # --- 分类 logits ---
-        class_logits = self.out8(lstm_out.transpose(1, 2).unsqueeze(3))
-
-        # --- 每秒聚合 ---
-        block = self.block
-        T_block = T // block  # 450->15
-
-        x_block = lstm_out[:, :T_block*block, :].reshape(B, T_block, block, -1).max(dim=2).values
-        # (B, 15, hidden)
-
-        # --- Level head Self-Attention ---
-        x_block_sa, attn_level = self.level_attn(x_block)
-
-        # --- Level 分类 ---
-        dist_logits = self.dist_fc(x_block_sa)  # (B, 15, num_levels)
-
-        return class_logits, dist_logits,lstm_out
-
-class MiniSelfAttention(nn.Module):
-    def __init__(self, d_model, num_heads=4, dropout=0.1):
-        super().__init__()
-        self.mha = nn.MultiheadAttention(d_model, num_heads, dropout=dropout, batch_first=True)
-        self.dropout = nn.Dropout(dropout)
-        self.ln = nn.LayerNorm(d_model)
-
-    def forward(self, x):
-        attn_out, attn = self.mha(x, x, x)  # 自注意力
-        x = self.ln(x + self.dropout(attn_out))  # 残差 + LayerNorm
-        return x, attn
         
+        x = x.squeeze(3).transpose(1, 2)
+        r_out, _ = self.reg_lstm(x)  
+        dist_pred = self.dist_reg_head(r_out) 
+        dist_pred = dist_pred.squeeze(-1)
+
+        x1, _ = self.lstm6(x)
+        x1 = self.dropout6(x1)
+
+        z = self.pos_enc(x1)
+        z, attn = self.sa_block(z)
         
+        x2, _ = self.lstm7(z)
+        x2 = self.dropout7(x2)
+        lstm_out = x2 
+
+        class_logits = self.out8(x2.transpose(1, 2).unsqueeze(3))
         
+        return class_logits, dist_pred, attn, lstm_out
 
 
-
-
-class DeepConvLSTM_PT(nn.Module):
+class DeepConvLSTM_PT1(nn.Module):
 
     def __init__(self, in_ch=6, num_classes=11, hidden_units=128):
         super().__init__()
@@ -319,4 +224,3 @@ class DeepConvLSTM_PT(nn.Module):
         class_logits = self.out8(x2.transpose(1, 2).unsqueeze(3))
         
         return class_logits, dist_pred, attn, lstm_out
-

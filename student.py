@@ -16,7 +16,7 @@ from openpack_torch.utils.io import cleanup_dir
 logger = getLogger(__name__)
 
 # ----------------------------------------------------------------------
-def kd_loss_kd(student_feats: torch.Tensor,
+def kd_loss_sqakd(student_feats: torch.Tensor,
                   teacher_feats: torch.Tensor,
                   temperature: float = 5.0) -> torch.Tensor:
     t = temperature
@@ -41,7 +41,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
     def __init__(self, cfg: DictConfig):
         super().__init__(cfg)
         # --- Assistant Model ---
-        ckpt_path = cfg.get("assistant_ckpt_path", "/datastore/code/log/a0/lightning_logs/version_0/checkpoints/last.ckpt") 
+        ckpt_path = cfg.get("assistant_ckpt_path")
         print(f"Loading Teacher Checkpoint from: {ckpt_path}") 
         ckpt = torch.load(ckpt_path, map_location=self.device)  
         self.assistant_model = optorch.models.imu.DeepConvLSTM_PT1(6, 11)
@@ -77,10 +77,10 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         t_flat = t.reshape(-1)
         ce = self.criterion(logits_flat, t_flat) 
 
-        # ---- feature Loss ----
-        loss_kd = kd_loss_kd(student_med, teacher_med)
+        # ---- SQAKD Loss ----
+        loss_sqakd = kd_loss_sqakd(student_med, teacher_med)
         
-        # ---- att loss----
+        # ---- 计算att----
         teacher_imp_h = torch.logsumexp(teacher_att, dim=-1)   # (B,H,T)
         student_imp_h = torch.logsumexp(student_att, dim=-1)   # (B,H,T)
         teacher_imp = torch.logsumexp(teacher_imp_h, dim=1)    # (B,T)
@@ -89,7 +89,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         teacher_imp=min_max_norm(teacher_imp)
         loss_tad = F.mse_loss(student_imp,teacher_imp)
         
-        # ---- dist loss----
+        # ---- 计算距离loss----
         right_wrist_pos = sk_x[:, :, :, 10]  # (B,C,T)
         diff = torch.zeros_like(right_wrist_pos)
         diff[:, :, 1:] = right_wrist_pos[:, :, 1:] - right_wrist_pos[:, :, :-1]
@@ -105,7 +105,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         l1 = precision1 * ce + self.loss_weights[0]
 
         precision2 = torch.exp(-self.loss_weights[1])
-        l2 = precision2 * loss_kd + self.loss_weights[1]
+        l2 = precision2 * loss_sqakd + self.loss_weights[1]
         
         precision3 = torch.exp(-self.loss_weights[2])
         l3 = precision3 * loss_dist_ce + self.loss_weights[2]
@@ -136,7 +136,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         return outputs
 # ----------------------------------------------------------------------
 def train(cfg: DictConfig):
-    logdir = Path("/datastore/code/log/new")
+    logdir = Path(cfg.logdir)
     logger.debug(f"logdir = {logdir}")
     cleanup_dir(logdir, exclude="hydra")
 
@@ -182,7 +182,7 @@ def test(cfg: DictConfig, mode: str = "test"):
     logger.debug(f"test() function is called with mode={mode}.")
 
     device = torch.device("cuda:2")
-    logdir = Path("/datastore/code/log/new")
+    logdir = Path(cfg.logdir)
 
     datamodule = OpenPackImuDataModule(cfg)
     datamodule.setup(mode)
@@ -209,7 +209,7 @@ def test(cfg: DictConfig, mode: str = "test"):
 
 
 @hydra.main(
-    version_base=None, config_path="./configs", config_name="deep-conv-lstm.yaml"
+    version_base=None, config_path="./configs", config_name="deep-conv-lstm_U0105.yaml"
 )
 def main(cfg: DictConfig):
     pl.seed_everything(seed=10, workers=True)
