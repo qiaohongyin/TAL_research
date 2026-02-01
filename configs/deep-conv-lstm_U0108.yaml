@@ -1,5 +1,6 @@
-assistant_ckpt_path: "/datastore/code/U0108.ckpt"
-logdir: "/datastore/code/log/student/U0108"
+assistant_ckpt_path: "/datastore/code/U0108.ckpt"    ##change here for the assistan model ckpt path
+logdir: "/datastore/code/log/student/U0108"    ##change here for the log dir path
+teacher_pt_path: "/datastore/saved_model/openpack_stgcn.pt"   ##change here for the teacher model pt path
 defaults:
   - common
   - _self_
@@ -15,7 +16,7 @@ train:
     mode: "max"
 
 dataset:
-  path: /datastore/openpack_data1/${user.name}/window/${session}.npz
+  path: /datastore/openpack_data1/${user.name}/window/${session}.npz    ## change here for the dataset path
   split:
     name: U0108
     train:
