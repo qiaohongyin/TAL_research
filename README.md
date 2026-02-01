@@ -1,4 +1,4 @@
-# Artifacts Guide: A Teaching Assistant for Teacher–Student Learning
+# Artifacts : A Teaching Assistant for Teacher–Student Learning
 
 This repository accompanies the paper: **“A Teaching Assistant for Teacher–Student Learning: Knowledge Transfer from Skeleton to Inertial Sensing for Activity Recognition in Industrial Domains.”**
 
