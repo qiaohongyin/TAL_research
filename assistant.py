@@ -69,7 +69,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         self.loss_weights = nn.Parameter(torch.zeros(4))
 
     def init_model(self, cfg: DictConfig) -> torch.nn.Module:
-        model = optorch.models.imu.DeepConvLSTM_PT(6, 11)
+        model = optorch.models.imu.DeepConvLSTM_PT1(6, 11)
         return model
 
     def configure_optimizers(self):
@@ -135,6 +135,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
             teacher_norm = teacher_soft_target / (teacher_soft_target.sum(dim=-1, keepdim=True) + 1e-9)
             teacher_feat = teacher_med.mean(dim=3).permute(0, 2, 1)
 
+
         student_logits, dist_pred, student_att, student_med = self.net(x)
         
         # --- Task A: Classification (Main) ---
@@ -153,7 +154,8 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         loss_cl = self.dense_contrastive_loss(z_student, z_teacher)
 
         # --- Task D: Attention Prep ---
-        student_importance = torch.logsumexp(student_att, dim=-2) 
+        student_att_heads = student_att.mean(dim=1) 
+        student_importance = torch.logsumexp(student_att_heads, dim=-2) 
         student_norm = student_importance / (student_importance.sum(dim=-1, keepdim=True) + 1e-9)
         loss_tad = F.mse_loss(student_norm, teacher_norm) * 1000000
 
@@ -207,11 +209,6 @@ def train(cfg: DictConfig):
     plmodel = DeepConvLSTMLM(cfg)
     logger.info(plmodel)
 
-
-    max_epoch = (
-        cfg.train.debug.epochs.maximum if cfg.debug else cfg.train.epochs.maximum
-    )
-
     checkpoint_callback = pytorch_lightning.callbacks.ModelCheckpoint(
         save_top_k=1,
         save_last=True,
@@ -230,7 +227,7 @@ def train(cfg: DictConfig):
         accelerator="gpu",
         devices=[1],
         min_epochs=1,
-        max_epochs=max_epoch,
+        max_epochs=500,
         logger=pl_logger,
         default_root_dir=logdir,
         enable_progress_bar=True,
