@@ -37,7 +37,8 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
             Kt=9,
             A=A,
         )
-        weight_path = "/workspaces/TAL_research/teacher.pt"
+
+        weight_path = cfg.get("teacher_pt_path")
         checkpoint = torch.load(weight_path, map_location=self.device)
         state_dict_raw = checkpoint.get('state_dict', checkpoint)
         new_state_dict = {}
@@ -83,7 +84,6 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         return self.net(x)
     
     def gaussian_smooth(self, importance_vec):
-        """输入: (B, T) -> 输出: (B, T)"""
         B, T = importance_vec.shape
         kernel = torch.tensor([0.25, 0.5, 0.25], device=importance_vec.device).view(1, 1, 3)
         x = importance_vec.unsqueeze(1) 
@@ -199,7 +199,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
 
 
 def train(cfg: DictConfig):
-    logdir = Path("/datastore/code/log/cl")
+    logdir = Path(cfg.logdir)
     logger.debug(f"logdir = {logdir}")
     cleanup_dir(logdir, exclude="hydra")
 
@@ -250,7 +250,7 @@ def test(cfg: DictConfig, mode: str = "test"):
     logger.debug(f"test() function is called with mode={mode}.")
 
     device = torch.device("cuda:1")
-    logdir = Path("/datastore/code/log/cl")
+    logdir = Path(cfg.logdir)
 
     datamodule = OpenPackImuDataModule(cfg)
     datamodule.setup(mode)
