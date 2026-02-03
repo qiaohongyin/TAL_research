@@ -61,7 +61,7 @@ And update the following paths in the configuration file to match your local env
 1. Open the configuration file:
    configs/deep-conv-lstm.yaml
 
-2. Update `assistant_ckpt_path` to the path of pretrained assistant checkpoint:
+2. Update `assistant_ckpt_path` to your local path of pretrained assistant checkpoint:
      ```
      work_dep_assistant_without_DA.ckpt
      ```
@@ -81,11 +81,11 @@ And update the following paths in the configuration file to match your local env
 1. Open the configuration file:
    configs/deep-conv-lstm.yaml
 
-2. Update `assistant_ckpt_path` to the path of pretrained assistant checkpoint:
+2. Update `assistant_ckpt_path` to your local path of pretrained assistant checkpoint:
    ```
    work_dep_assistant_with_DA.ckpt
    ```
-   
+
 3. Ensure the following session configuration line is active:
     ```yaml
     - [U0101, S0700]
@@ -108,7 +108,7 @@ Steps:
 1. Open the configuration file:
    configs/deep-conv-lstm.yaml
 
-2. Update `assistant_ckpt_path` to:
+2. Update `assistant_ckpt_path` to your local path of pretrained assistant checkpoint:
    work_dep_assistant_without_DA.ckpt
 
 3. Comment out the following session configuration line:
