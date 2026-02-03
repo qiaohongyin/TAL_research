@@ -35,7 +35,9 @@ This section describes how to reproduce the experimental results reported in the
 
 ### 1. Preparation
 
-Ensure that the environment is correctly set up and that all required pretrained checkpoints (.ckpt files) are available.
+Ensure that the environment is correctly set up and Please download all of the pretrained models from the following link:
+
+https://drive.google.com/drive/folders/1FO4r3D4Zd_HLPG5-8LtBs9VQlqe6YC37?dmr=1&ec=wgc-drive-hero-goto
 
 ---
 
@@ -46,8 +48,24 @@ Ensure that the environment is correctly set up and that all required pretrained
 1. Open the configuration file:
    configs/deep-conv-lstm.yaml
 
-2. Update `assistant_ckpt_path` to:
-   work_dep_assistant_without_DA.ckpt
+2. Update the following paths in the configuration file to match your local environment:
+
+   - Set `assistant_ckpt_path` to the pretrained assistant checkpoint:
+     ```
+     work_dep_assistant_without_DA.ckpt
+     ```
+
+   - Update `logdir` to a local directory for saving logs and checkpoints, for example:
+     ```
+     logdir: ./logs/student/
+     ```
+
+   - Update the dataset path to your local OpenPack data location:
+     ```yaml
+     dataset:
+       path: /path/to/your/local/openpack_data/${user.name}/window/${session}.npz
+     ```
+
 
 3. Comment out the following session configuration line:
    ```yaml
