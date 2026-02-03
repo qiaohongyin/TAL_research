@@ -50,7 +50,8 @@ Ensure that the environment is correctly set up and that all required pretrained
    work_dep_assistant_without_DA.ckpt
 
 3. Comment out the following session configuration line:
-   # - [U0101, S0700]
+   ```yaml
+    # - [U0101, S0700]
 
 4. Run the training script:
    python student.py mode=train --config-name deep-conv-lstm.yaml
@@ -90,7 +91,9 @@ Steps:
    work_dep_assistant_without_DA.ckpt
 
 3. Comment out the following session configuration line:
-   # - [U0101, S0700]
+   ```yaml
+    # - [U0101, S0700]
+
 
 4. Set the corresponding loss term(s) to zero.
    We recommend setting the composed loss term ℓ to zero so that both the weighted loss
