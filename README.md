@@ -44,7 +44,7 @@ Ensure that the environment is correctly set up and that all required pretrained
 #### 2.1 TAS (w/o DA)
 
 1. Open the configuration file:
-   configs/imu/deep-conv-lstm.yaml
+   configs/deep-conv-lstm.yaml
 
 2. Update `assistant_ckpt_path` to:
    work_dep_assistant_without_DA.ckpt
@@ -61,7 +61,7 @@ Ensure that the environment is correctly set up and that all required pretrained
 #### 2.2 TAS (Ours)
 
 1. Open the configuration file:
-   configs/imu/deep-conv-lstm.yaml
+   configs/deep-conv-lstm.yaml
 
 2. Update `assistant_ckpt_path` to:
    work_dep_assistant_with_DA.ckpt
@@ -86,7 +86,7 @@ L4: Temporal Transfer
 Steps:
 
 1. Open the configuration file:
-   configs/imu/deep-conv-lstm.yaml
+   configs/deep-conv-lstm.yaml
 
 2. Update `assistant_ckpt_path` to:
    work_dep_assistant_without_DA.ckpt
@@ -127,4 +127,6 @@ For each user:
    python student.py mode=train --config-name deep-conv-lstm_U0103.yaml
 
 The final Worker-Independent result is the arithmetic mean of the four runs.
+
+Although this requires some manual effort, we kindly ask you to record the results for each of the four users and manually compute their arithmetic mean to obtain the final Worker-Independent score. Thank you.
 
