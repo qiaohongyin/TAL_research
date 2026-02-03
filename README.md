@@ -39,22 +39,7 @@ Ensure that the environment is correctly set up and Please download all of the p
 
 https://drive.google.com/drive/folders/1FO4r3D4Zd_HLPG5-8LtBs9VQlqe6YC37?dmr=1&ec=wgc-drive-hero-goto
 
----
-
-### 2. Reproducing Table II: TAS Performance
-
-#### 2.1 TAS (w/o DA)
-
-1. Open the configuration file:
-   configs/deep-conv-lstm.yaml
-
-2. Update the following paths in the configuration file to match your local environment:
-
-   - Set `assistant_ckpt_path` to the pretrained assistant checkpoint:
-     ```
-     work_dep_assistant_without_DA.ckpt
-     ```
-
+And update the following paths in the configuration file to match your local environment:
    - Update `logdir` to a local directory for saving logs and checkpoints, for example:
      ```
      logdir: ./logs/student/
@@ -64,6 +49,21 @@ https://drive.google.com/drive/folders/1FO4r3D4Zd_HLPG5-8LtBs9VQlqe6YC37?dmr=1&e
      ```yaml
      dataset:
        path: /path/to/your/local/openpack_data/${user.name}/window/${session}.npz
+     ```
+
+---
+
+
+### 2. Reproducing Table II: TAS Performance
+
+#### 2.1 TAS (w/o DA)
+
+1. Open the configuration file:
+   configs/deep-conv-lstm.yaml
+
+2. Update `assistant_ckpt_path` to the path of pretrained assistant checkpoint:
+     ```
+     work_dep_assistant_without_DA.ckpt
      ```
 
 
@@ -81,9 +81,11 @@ https://drive.google.com/drive/folders/1FO4r3D4Zd_HLPG5-8LtBs9VQlqe6YC37?dmr=1&e
 1. Open the configuration file:
    configs/deep-conv-lstm.yaml
 
-2. Update `assistant_ckpt_path` to:
+2. Update `assistant_ckpt_path` to the path of pretrained assistant checkpoint:
+   ```
    work_dep_assistant_with_DA.ckpt
-
+   ```
+   
 3. Ensure the following session configuration line is active:
     ```yaml
     - [U0101, S0700]
