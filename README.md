@@ -67,7 +67,8 @@ Ensure that the environment is correctly set up and that all required pretrained
    work_dep_assistant_with_DA.ckpt
 
 3. Ensure the following session configuration line is active:
-   - [U0101, S0700]
+    ```yaml
+    - [U0101, S0700]
 
 4. Run the training script:
    python student.py mode=train --config-name deep-conv-lstm.yaml
