@@ -33,45 +33,133 @@ Run the student script using the best checkpoint from the assistant:
 python student.py mode = train
 
 
+Reproducing the Experiments
+
+This section describes how to reproduce the experimental results reported in the main paper.
+
 1. Preparation
-Ensure you have the environment set up and the necessary checkpoints (.ckpt files) placed in your designated storage path.
+
+Before running any experiments, please ensure that:
+
+The environment is correctly set up according to the instructions in this repository.
+
+All required pretrained checkpoints (.ckpt files) are downloaded and placed in your designated storage path.
+
+The checkpoint paths are correctly specified in the corresponding configuration files.
 
 2. Reproducing Table II: TAS Performance
-    TAS (w/o DA)
-        1.Open configs/imu/deep-conv-lstm.yaml.
-        2.Update assistant_ckpt_path to the path of work_dep_assistant_without_DA.ckpt.
-        3.Comment out the session configuration line:
-            # - [U0101, S0700]
-        4.Run the training script:
-            python student.py mode=train --config-name deep-conv-lstm.yaml
-    TAS (Ours)
-        1.Open configs/imu/deep-conv-lstm.yaml.
-        2.Update assistant_ckpt_path to the path of work_dep_assistant_with_DA.ckpt.
-        3.Ensure the session line is uncommented:
-            - [U0101, S0700]
-        4.Run the training script:
-            python student.py mode=train --config-name deep-conv-lstm.yaml
-3. Reproducing Table III (Ablation Study)
-The ablation study results are obtained by manually modifying the loss function components in student.py.
-L2: Feature Knowledge Distillation (feature_kd)
-L3: Spatial Learning
-L4: Temporal Transfer
-        1.Open configs/imu/deep-conv-lstm.yaml.
-        2.Update assistant_ckpt_path to the path of work_dep_assistant_without_DA.ckpt.
-        3.Comment out the session configuration line:
-            # - [U0101, S0700]
-        4.Set the corresponding loss term(s) to zero.We recommend assigning zero to the composed term l (instead of only setting the raw loss to zero), so that both the weighted loss and its regularizer are removed from the total objective.
-        5.Run the training script:
-            python student.py mode=train --config-name deep-conv-lstm.yaml
+2.1 TAS (w/o DA)
 
-4.Reproducing Table Ⅳ (Worker-Independent Results)
-Worker-Independent results require running the model across four different users and averaging the final metrics.
-For each user configuration file (deep-conv-lstm_U0103.yaml, U0105, U0107, U0108):
-    1.Update the assistant_ckpt_path to the corresponding user checkpoint.
-    2.Toggle DA:
-        With DA: Keep - [U0101, S0700] active.
-        Without DA: Comment out - [U0101, S0700].
-    3.Run the training script for each user:
-        # Example for U0103
-        python student.py mode=train --config-name deep-conv-lstm_U0103.yaml
-The final Worker-Independent score reported in the paper is the arithmetic mean of the results obtained from the four users mentioned above. Please calculate the average of these four experimental runs to verify the reported values.
+Open the configuration file:
+
+configs/imu/deep-conv-lstm.yaml
+
+
+Update assistant_ckpt_path to point to:
+
+work_dep_assistant_without_DA.ckpt
+
+
+Comment out the following session configuration line:
+
+# - [U0101, S0700]
+
+
+Run the training script:
+
+python student.py mode=train --config-name deep-conv-lstm.yaml
+
+2.2 TAS (Ours)
+
+Open the configuration file:
+
+configs/imu/deep-conv-lstm.yaml
+
+
+Update assistant_ckpt_path to point to:
+
+work_dep_assistant_with_DA.ckpt
+
+
+Ensure the following session configuration line is uncommented:
+
+- [U0101, S0700]
+
+
+Run the training script:
+
+python student.py mode=train --config-name deep-conv-lstm.yaml
+
+3. Reproducing Table III: Ablation Study
+
+The ablation study is conducted by manually disabling specific loss components in student.py.
+
+The evaluated components are:
+
+L2: Feature Knowledge Distillation (feature_kd)
+
+L3: Spatial Learning
+
+L4: Temporal Transfer
+
+Steps:
+
+Open the configuration file:
+
+configs/imu/deep-conv-lstm.yaml
+
+
+Update assistant_ckpt_path to point to:
+
+work_dep_assistant_without_DA.ckpt
+
+
+Comment out the following session configuration line:
+
+# - [U0101, S0700]
+
+
+Set the corresponding loss term(s) to zero in student.py.
+
+Note:
+We recommend assigning zero to the composed loss term ℓ (rather than only setting the raw loss to zero), so that both the weighted loss and its associated regularizer are fully removed from the total objective.
+
+Run the training script:
+
+python student.py mode=train --config-name deep-conv-lstm.yaml
+
+4. Reproducing Table IV: Worker-Independent Results
+
+Worker-Independent results are obtained by training the model on four different users and averaging the final performance.
+
+The corresponding configuration files are:
+
+deep-conv-lstm_U0103.yaml
+
+deep-conv-lstm_U0105.yaml
+
+deep-conv-lstm_U0107.yaml
+
+deep-conv-lstm_U0108.yaml
+
+For each user:
+
+Update assistant_ckpt_path to the corresponding user-specific assistant checkpoint.
+
+Toggle Domain Adaptation (DA):
+
+With DA: Keep the following line active:
+
+- [U0101, S0700]
+
+
+Without DA: Comment out the line above.
+
+Run the training script.
+Example for user U0103:
+
+python student.py mode=train --config-name deep-conv-lstm_U0103.yaml
+
+
+The final Worker-Independent score reported in the paper is computed as the arithmetic mean of the results obtained from these four users.
+Please average the four experimental results to verify the reported values.
