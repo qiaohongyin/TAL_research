@@ -1,9 +1,7 @@
-assistant_ckpt_path: "/datastore/saved_model/U0103.ckpt"    ##change here for the assistan model ckpt path
-logdir: "/datastore/code/log/student/U0103"  ##change here for the log dir path
-teacher_pt_path: "/datastore/saved_model/openpack_stgcn.pt"   ##change here for the teacher model pt path
-
+assistant_ckpt_path: "${path}/saved_model/model/assistant/work_dep/work_dep_assistant_with_DA.ckpt"    ##change here for the assistan model ckpt path
 defaults:
   - common
+  - path
   - _self_
   - override hydra/job_logging: custom
 
@@ -17,11 +15,7 @@ train:
     verbose: false
     mode: "max"
 
-
 dataset:
-  path: data/${user.name}/window/${session}.npz   ## change here for the dataset path
-
-
   split:
     name: worker_dependent
     train:
@@ -36,7 +30,7 @@ dataset:
       - [U0109, S0100]
       - [U0110, S0100]
       - [U0111, S0100]
-      - [U0101, S0700]   ##virtual imu data
+      - [U0101, S0700]
     val:
       - [U0101, S0600]
     test:

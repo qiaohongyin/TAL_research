@@ -1,0 +1,5 @@
+path: "/datastore/code" ## change here for the code base path
+teacher_pt_path: "${path}/saved_model/model/teacher/openpack_stgcn.pt"   ##change here for the teacher model pt path
+logdir: "${path}/log/student/work_dep"  ##change here for the log dir path
+dataset:
+  path:  ${path}/data/${user.name}/window/${session}.npz ## change here for the dataset path
