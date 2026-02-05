@@ -16,7 +16,7 @@ train:
     mode: "max"
 
 dataset:
-  path: /datastore/openpack_data1/${user.name}/window/${session}.npz    ## change here for the dataset path
+  path: data/${user.name}/window/${session}.npz    ## change here for the dataset path
   split:
     name: U0103
     train:
