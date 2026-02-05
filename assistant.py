@@ -225,7 +225,7 @@ def train(cfg: DictConfig):
     pl_logger = pytorch_lightning.loggers.CSVLogger(logdir)
     trainer = pl.Trainer(
         accelerator="gpu",
-        devices=[1],
+        devices=[0],
         min_epochs=1,
         max_epochs=500,
         logger=pl_logger,
@@ -262,7 +262,7 @@ def test(cfg: DictConfig, mode: str = "test"):
     plmodel.to(dtype=torch.float, device=device)
     trainer = pl.Trainer(
         accelerator="gpu",
-        devices=[1],
+        devices=[0],
         logger=False,  # disable logging module
         default_root_dir=logdir,
         enable_progress_bar=False,  # disable progress bar

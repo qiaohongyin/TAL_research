@@ -77,7 +77,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         t_flat = t.reshape(-1)
         ce = self.criterion(logits_flat, t_flat) 
 
-        # ---- SQAKD Loss ----
+        # ---- KD Loss ----
         loss_kd = kd_loss_kd(student_med, teacher_med)
         
         # ---- 计算att----
@@ -89,7 +89,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         teacher_imp=min_max_norm(teacher_imp)
         loss_tad = F.mse_loss(student_imp,teacher_imp)
         
-        # ---- 计算距离loss----
+        # ---- dist loss----
         right_wrist_pos = sk_x[:, :, :, 10]  # (B,C,T)
         diff = torch.zeros_like(right_wrist_pos)
         diff[:, :, 1:] = right_wrist_pos[:, :, 1:] - right_wrist_pos[:, :, :-1]
@@ -160,7 +160,7 @@ def train(cfg: DictConfig):
     pl_logger = pytorch_lightning.loggers.CSVLogger(logdir)
     trainer = pl.Trainer(
         accelerator="gpu",
-        devices=[2],
+        devices=[0],
         min_epochs=1,
         max_epochs=500,
         logger=pl_logger,
@@ -197,7 +197,7 @@ def test(cfg: DictConfig, mode: str = "test"):
     plmodel.to(dtype=torch.float, device=device)
     trainer = pl.Trainer(
         accelerator="gpu",
-        devices=[2],
+        devices=[0],
         logger=False,  # disable logging module
         default_root_dir=logdir,
         enable_progress_bar=False,  # disable progress bar
