@@ -181,7 +181,7 @@ def test(cfg: DictConfig, mode: str = "test"):
     assert mode in ("test", "submission", "test-on-submission")
     logger.debug(f"test() function is called with mode={mode}.")
 
-    device = torch.device("cuda:2")
+    device = torch.device("cuda:0")
     logdir = Path(cfg.logdir)
 
     datamodule = OpenPackImuDataModule(cfg)
