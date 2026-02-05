@@ -214,7 +214,7 @@ def train(cfg: DictConfig):
         save_last=True,
         mode=cfg.train.early_stop.mode,
         monitor=cfg.train.early_stop.monitor,
-        filename="{epoch:02d}-{train/loss:.2f}-{val/loss:.2f}",
+        filename="{epoch:02d}",
         verbose=False,
     )
 
