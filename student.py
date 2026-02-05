@@ -80,7 +80,7 @@ class DeepConvLSTMLM(optorch.lightning.BaseLightningModule):
         # ---- KD Loss ----
         loss_kd = kd_loss_kd(student_med, teacher_med)
         
-        # ---- 计算att----
+        # ---- attn_loss----
         teacher_imp_h = torch.logsumexp(teacher_att, dim=-1)   # (B,H,T)
         student_imp_h = torch.logsumexp(student_att, dim=-1)   # (B,H,T)
         teacher_imp = torch.logsumexp(teacher_imp_h, dim=1)    # (B,T)
