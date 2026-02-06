@@ -83,7 +83,7 @@ python student.py mode=test  --config-name dep_with_DA.yaml
 
 Worker-Independent results are obtained by training the model on four users and averaging the results.
 
-#### 2.1 TAS (w/o DA)
+#### 3.1 TAS (w/o DA)
 
 Run the training script:
 ```bash
@@ -110,7 +110,7 @@ python student.py mode=test  --config-name U0108_without_DA.yaml
 
 ---
 
-#### 2.2 TAS (Ours)
+#### 3.2 TAS (Ours)
 Run the training script:
 ```bash
 #train--U0103
