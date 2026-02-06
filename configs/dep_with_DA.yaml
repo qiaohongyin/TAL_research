@@ -1,4 +1,5 @@
 assistant_ckpt_path: "${path}/saved_model/model/assistant/work_dep/work_dep_assistant_with_DA.ckpt"    ##change here for the assistan model ckpt path
+
 defaults:
   - common
   - path

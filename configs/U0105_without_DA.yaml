@@ -1,0 +1,45 @@
+assistant_ckpt_path: "${path}/saved_model/model/assistant/work_indep/with_DA/U0105_without_DA.ckpt"     ##change here for the assistan model ckpt path
+defaults:
+  - common
+  - path
+  - _self_
+  - override hydra/job_logging: custom
+
+train:
+  checkpoint: last
+  early_stop:
+    monitor: "train_acc"
+    min_delta: 0.001
+    patience: 30
+    verbose: false
+    mode: "max"
+
+dataset:
+  split:
+    name: U0105
+    train:
+      - [U0101, S0100]
+      - [U0102, S0100]
+      - [U0103, S0100]
+      - [U0104, S0100]
+      - [U0106, S0100]
+      - [U0107, S0100]
+      - [U0108, S0100]
+      - [U0109, S0100]
+      - [U0110, S0100]
+      - [U0111, S0100]
+    val:
+      - [U0101, S0600]
+      
+    test:
+      - [U0105, S0100]
+      - [U0105, S0200]
+      - [U0105, S0300]
+      - [U0105, S0400]
+      - [U0105, S0500]
+
+      - [U0202, S0100]
+      - [U0202, S0200]
+      - [U0202, S0300]
+      - [U0202, S0400]
+      - [U0202, S0500]
