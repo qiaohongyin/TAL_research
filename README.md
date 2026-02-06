@@ -56,7 +56,7 @@ https://drive.google.com/drive/folders/1H4ZQGA3_hw7AE6M4VmlLSZyvcep8RWbn
 Then place the downloaded folders **inside the `TAL_research/` directory**.
 
 
-### 2. Reproducing Table II: TAS Performance
+### 2. Reproducing Table II: Worker-Dependent Results
 
 #### 2.1 TAS (w/o DA)
 
