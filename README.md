@@ -14,16 +14,31 @@ The repository is organized as follows:
 - `student.py`: Script to train the Student model (single-wrist IMU) using the TAS framework.
 - `README.md`: This guide.
 
-## 2. Environment Setup
 
-The code has been tested on **Python 3.10**. To ensure compatibility (especially with Hydra on Python 3.10), please follow these installation steps:
+
+## 2. System and Hardware Requirements
+
+### 1. Tested Environment
+
+The code has been tested in the following environment:
+
+- **Operating System**: Ubuntu 20.04 / 22.04
+- **Python**: 3.10
+- **GPU**: NVIDIA GPU with CUDA support  
+  - Tested on **NVIDIA RTX PRO 6000 Blackwell (96 GB VRAM)**
+- **CUDA**: 13.0
+- **NVIDIA Driver**: 580.95.05
+- **Deep Learning Frameworks**:
+  - PyTorch 2.9.1
+  - PyTorch Lightning 2.1.4
+
+### 2. Environment Setup
 
 | Package | Installation Command | Purpose |
 | :--- | :--- | :--- |
-| **Hydra** | `pip install hydra-core --upgrade` | Configuration management (resolves Python 3.10 compatibility issues). |
-| **Lightning** | `pip install lightning --upgrade` | Deep learning training framework. |
+| **Hydra** | `pip install hydra-core` | Configuration management. |
+| **Lightning** | `pip install lightning` | Deep learning training framework. |
 | **Utilities** | `pip install pandas scikit-learn` | Data handling and Macro-F1 score calculation. |
-
 
 
 
@@ -35,23 +50,12 @@ This section describes how to reproduce the experimental results reported in the
 
 ### 1. Preparation
 
-Ensure that the environment is correctly set up and Please download all of the pretrained models from the following link:
+Please download all pretrained models from the following link:
 
-https://drive.google.com/drive/folders/1FO4r3D4Zd_HLPG5-8LtBs9VQlqe6YC37?dmr=1&ec=wgc-drive-hero-goto
+https://drive.google.com/drive/folders/1H4ZQGA3_hw7AE6M4VmlLSZyvcep8RWbn
 
-And update the following paths in the configuration file to match your local environment:
-   - Update `logdir` to a local directory for saving logs and checkpoints, for example:
-     ```
-     logdir: ./logs/student/
-     ```
+Then place the downloaded folders **inside the `TAL_research/` directory**.
 
-   - Update the dataset path to your local OpenPack data location:
-     ```yaml
-     dataset:
-       path: /path/to/your/local/openpack_data/${user.name}/window/${session}.npz
-     ```
-
----
 
 
 ### 2. Reproducing Table II: TAS Performance
