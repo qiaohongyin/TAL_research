@@ -31,7 +31,15 @@ def min_max_norm(x):
     x_min = x.min(dim=-1, keepdim=True).values
     x_max = x.max(dim=-1, keepdim=True).values
     return (x - x_min) / (x_max - x_min + 1e-9) 
-    
+
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda:0")
+    elif torch.backends.mps.is_available():
+        return torch.device("mps")
+    else:
+        return torch.device("cpu")
+ 
 # ----------------------------------------------------------------------
 
 class OpenPackImuDataModule(optorch.data.OpenPackBaseDataModule):
@@ -159,8 +167,8 @@ def train(cfg: DictConfig):
 
     pl_logger = pytorch_lightning.loggers.CSVLogger(logdir)
     trainer = pl.Trainer(
-        accelerator="gpu",
-        devices=[0],
+        accelerator="auto",
+        devices=1,
         min_epochs=1,
         max_epochs=500,
         logger=pl_logger,
@@ -178,10 +186,9 @@ def train(cfg: DictConfig):
 
 
 def test(cfg: DictConfig, mode: str = "test"):
-    assert mode in ("test", "submission", "test-on-submission")
     logger.debug(f"test() function is called with mode={mode}.")
 
-    device = torch.device("cuda:0")
+    device = get_device()
     logdir = Path(cfg.logdir)
 
     datamodule = OpenPackImuDataModule(cfg)
@@ -196,8 +203,8 @@ def test(cfg: DictConfig, mode: str = "test"):
 )
     plmodel.to(dtype=torch.float, device=device)
     trainer = pl.Trainer(
-        accelerator="gpu",
-        devices=[0],
+        accelerator="auto",
+        devices=1,
         logger=False,  # disable logging module
         default_root_dir=logdir,
         enable_progress_bar=False,  # disable progress bar
@@ -215,7 +222,7 @@ def main(cfg: DictConfig):
     pl.seed_everything(seed=10, workers=True)
     if cfg.mode == "train":
         train(cfg)
-    elif cfg.mode in ("test"):
+    elif cfg.mode == "test":
         test(cfg, mode=cfg.mode)
     else:
         raise ValueError(f"unknown mode [cfg.mode={cfg.mode}]")
