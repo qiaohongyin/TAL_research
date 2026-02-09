@@ -1,4 +1,4 @@
-assistant_ckpt_path: "${path}/saved_model/assistant/work_indep/with_DA/U0108_without_DA.ckpt"     ##change here for the assistan model ckpt path
+assistant_ckpt_path: "${path}/saved_model/assistant/work_indep/without_DA/U0108_without_DA.ckpt"     ##change here for the assistan model ckpt path
 defaults:
   - common
   - path
